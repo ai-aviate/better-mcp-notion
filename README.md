@@ -21,9 +21,12 @@ Existing Notion MCP servers are thin API wrappers that require multiple round-tr
 | Tool | Description |
 |------|-------------|
 | `read` | Read a Notion page as Markdown with frontmatter. Supports recursive child page reading with `depth`. |
-| `write` | Create or update pages from Markdown. Supports batch operations with `===` separator. |
+| `write` | Create or update pages from Markdown. Supports batch operations and append/prepend. |
 | `search` | Search the workspace by keyword. Returns a Markdown-formatted list. |
 | `list` | List database records as a table or child pages as a list. Supports natural language filter & sort. |
+| `update` | Quick property update without rewriting content. Just pass page + key-value pairs. |
+| `schema` | View or modify database schema — add, remove, or rename columns. |
+| `comment` | Add or read comments on a page. |
 | `delete` | Archive (soft-delete) a page. |
 | `move` | Move a page to a different parent page or database. |
 
@@ -222,6 +225,40 @@ read({ page: "parent-page-id", depth: 2 })
 ```
 
 `depth: 1` = current page only (default), `2` = include children, `3` = include grandchildren.
+
+### Quick property update
+
+Update properties without rewriting content:
+
+```
+update({ page: "My Task", properties: { "Status": "Done", "Priority": "High" } })
+```
+
+### Manage database schema
+
+```
+// View schema
+schema({ database: "Task Board" })
+
+// Add a column
+schema({ database: "Task Board", action: "add", property: "Priority", type: "select", options: ["Low", "Medium", "High"] })
+
+// Rename a column
+schema({ database: "Task Board", action: "rename", property: "Due", name: "Due Date" })
+
+// Remove a column
+schema({ database: "Task Board", action: "remove", property: "Old Column" })
+```
+
+### Comments
+
+```
+// Read comments
+comment({ page: "abc123" })
+
+// Add a comment
+comment({ page: "abc123", body: "Looks good! Ready to ship." })
+```
 
 ## Frontmatter Reference
 

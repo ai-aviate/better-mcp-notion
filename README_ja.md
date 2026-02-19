@@ -22,9 +22,12 @@ better-mcp-notion は **Markdown（YAML frontmatter + 本文）1つ** で、ペ�
 | ツール | 概要 |
 |--------|------|
 | `read` | Notion ページを Markdown + frontmatter として読む。`depth` で子ページの再帰取得も可能。 |
-| `write` | Markdown からページを作成/更新。`===` 区切りでバッチ処理にも対応。 |
+| `write` | Markdown からページを作成/更新。バッチ処理、append/prepend 対応。 |
 | `search` | ワークスペースをキーワード検索。Markdown フォーマットで結果を返す。 |
 | `list` | DB レコードをテーブル、子ページをリストで表示。自然言語フィルタ・ソート対応。 |
+| `update` | コンテンツに触れずにプロパティだけ更新。ページ + key-value で指定。 |
+| `schema` | DB スキーマの表示・変更 — カラムの追加・削除・リネーム。 |
+| `comment` | ページへのコメント追加・取得。 |
 | `delete` | ページをアーカイブ（ソフトデリート）。 |
 | `move` | ページを別の親ページまたは DB に移動。 |
 
@@ -223,6 +226,40 @@ read({ page: "parent-page-id", depth: 2 })
 ```
 
 `depth: 1` = 現在のページのみ（デフォルト）、`2` = 子ページ含む、`3` = 孫ページ含む。
+
+### プロパティだけ更新する
+
+コンテンツに触れずにプロパティだけ更新:
+
+```
+update({ page: "My Task", properties: { "Status": "Done", "Priority": "High" } })
+```
+
+### DB スキーマを管理する
+
+```
+// スキーマ表示
+schema({ database: "Task Board" })
+
+// カラム追加
+schema({ database: "Task Board", action: "add", property: "Priority", type: "select", options: ["Low", "Medium", "High"] })
+
+// カラムリネーム
+schema({ database: "Task Board", action: "rename", property: "Due", name: "Due Date" })
+
+// カラム削除
+schema({ database: "Task Board", action: "remove", property: "Old Column" })
+```
+
+### コメント
+
+```
+// コメント取得
+comment({ page: "abc123" })
+
+// コメント追加
+comment({ page: "abc123", body: "いい感じ！リリースしよう。" })
+```
 
 ## Frontmatter リファレンス
 

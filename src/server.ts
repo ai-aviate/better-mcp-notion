@@ -5,11 +5,14 @@ import { registerSearchTool } from "./tools/search.js";
 import { registerListTool } from "./tools/list.js";
 import { registerDeleteTool } from "./tools/delete.js";
 import { registerMoveTool } from "./tools/move.js";
+import { registerUpdateTool } from "./tools/update.js";
+import { registerSchemaTool } from "./tools/schema.js";
+import { registerCommentTool } from "./tools/comment.js";
 
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "better-mcp-notion",
-    version: "0.1.0",
+    version: "0.2.0",
   });
 
   registerReadTool(server);
@@ -18,6 +21,9 @@ export function createServer(): McpServer {
   registerListTool(server);
   registerDeleteTool(server);
   registerMoveTool(server);
+  registerUpdateTool(server);
+  registerSchemaTool(server);
+  registerCommentTool(server);
 
   return server;
 }
