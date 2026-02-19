@@ -13,6 +13,9 @@
   },
   "keywords": ["mcp", "notion", "markdown"],
   "license": "Elastic-2.0",
+  "files": [
+    "build/"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@notionhq/client": "^5.0.0",
