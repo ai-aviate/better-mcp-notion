@@ -1,6 +1,6 @@
 {
   "name": "better-mcp-notion",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server that lets you operate Notion with a single Markdown document (frontmatter + body)",
   "type": "module",
   "main": "build/index.js",
@@ -15,7 +15,13 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["mcp", "notion", "markdown", "model-context-protocol", "ai"],
+  "keywords": [
+    "mcp",
+    "notion",
+    "markdown",
+    "model-context-protocol",
+    "ai"
+  ],
   "license": "Elastic-2.0",
   "author": "takumi-aviate",
   "repository": {
