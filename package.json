@@ -1,18 +1,34 @@
 {
   "name": "better-mcp-notion",
   "version": "0.1.0",
-  "description": "MD(frontmatter + 本文)1つでNotionを操作するMCPサーバー",
+  "description": "MCP server that lets you operate Notion with a single Markdown document (frontmatter + body)",
   "type": "module",
   "main": "build/index.js",
+  "bin": {
+    "better-mcp-notion": "build/index.js"
+  },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build && npm test",
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["mcp", "notion", "markdown"],
+  "keywords": ["mcp", "notion", "markdown", "model-context-protocol", "ai"],
   "license": "Elastic-2.0",
+  "author": "takumi-aviate",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ai-aviate/better-mcp-notion.git"
+  },
+  "homepage": "https://github.com/ai-aviate/better-mcp-notion#readme",
+  "bugs": {
+    "url": "https://github.com/ai-aviate/better-mcp-notion/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "files": [
     "build/"
   ],

@@ -1,54 +1,63 @@
 # better-mcp-notion
 
-**1つの Markdown で Notion を操作する MCP サーバー**
+[Japanese / 日本語](./README_ja.md)
 
-従来の Notion MCP は API のラッパーに過ぎず、1つの操作に複数回の通信が必要だった。
-better-mcp-notion は **Markdown（frontmatter + 本文）1つ** で読み書きが完結する。
+**An MCP server that lets you operate Notion with a single Markdown document.**
 
-## 特徴
+Existing Notion MCP servers are thin API wrappers that require multiple round-trips for a single operation. better-mcp-notion uses **one Markdown document (YAML frontmatter + body)** to read, create, and update pages in a single call.
 
-- **6ツールだけ** - 競合の 16〜22 ツールに対して、コンテキストウィンドウを節約
-- **MD in, MD out** - 入出力が全て Markdown。AI にとって最も自然なフォーマット
-- **1回で完結** - ページ作成、プロパティ設定、本文記述を 1 回の呼び出しで
-- **read → edit → write** - 読んだ出力をそのまま編集して書き戻せる
+## Why better-mcp-notion?
 
-## ツール一覧
+| | Traditional Notion MCP | better-mcp-notion |
+|---|---|---|
+| Tools | 16-22 tools | **6 tools** |
+| Create a DB entry | 3+ calls (search DB, get schema, create page, append blocks) | **1 call** |
+| Edit a page | 4+ calls (get page, get blocks, delete blocks, append blocks) | **1 call** (read, edit, write) |
+| Format | Raw JSON blocks | **Markdown** |
+| Context window | Heavy (tool definitions + JSON) | **Light** |
 
-| ツール | 概要 |
-|--------|------|
-| `read` | ページ → Markdown（depth 指定で子ページ再帰取得） |
-| `write` | Markdown → ページ作成/更新（バッチ対応） |
-| `search` | キーワード検索 → 結果リスト |
-| `list` | DB 一覧/子ページ一覧（自然言語フィルタ・ソート） |
-| `delete` | ページのアーカイブ |
-| `move` | ページを別の親に移動 |
+## Tools
 
-## セットアップ
+| Tool | Description |
+|------|-------------|
+| `read` | Read a Notion page as Markdown with frontmatter. Supports recursive child page reading with `depth`. |
+| `write` | Create or update pages from Markdown. Supports batch operations with `===` separator. |
+| `search` | Search the workspace by keyword. Returns a Markdown-formatted list. |
+| `list` | List database records as a table or child pages as a list. Supports natural language filter & sort. |
+| `delete` | Archive (soft-delete) a page. |
+| `move` | Move a page to a different parent page or database. |
 
-### 1. Notion Integration を作成
+## Quick Start
 
-1. https://www.notion.so/profile/integrations で新しい Integration を作成
-2. API キー（`ntn_...`）をコピー
-3. 操作したいページ/DB で「Connect to」から Integration を追加
+### 1. Create a Notion Integration
 
-### 2. インストール & ビルド
+1. Go to [notion.so/profile/integrations](https://www.notion.so/profile/integrations) and create a new integration
+2. Copy the API key (`ntn_...`)
+3. Share the pages/databases you want to access with the integration ("Connect to" in the page menu)
+
+### 2. Add to your MCP client
+
+#### Claude Code
 
 ```bash
-npm install
-npm run build
+claude mcp add better-notion -- npx better-mcp-notion
 ```
 
-### 3. MCP クライアントに接続
+Then set the environment variable:
+```bash
+export NOTION_API_KEY=ntn_your_api_key_here
+```
 
-`.mcp.json`（プロジェクト単位）または MCP クライアントの設定に追加:
+#### Claude Desktop / Cursor / Windsurf
+
+Add to your MCP config file (e.g. `claude_desktop_config.json`, `.cursor/mcp.json`):
 
 ```json
 {
   "mcpServers": {
     "better-notion": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["/path/to/better-mcp-notion/build/index.js"],
+      "command": "npx",
+      "args": ["-y", "better-mcp-notion"],
       "env": {
         "NOTION_API_KEY": "ntn_your_api_key_here"
       }
@@ -57,15 +66,26 @@ npm run build
 }
 ```
 
-## 使い方
+#### From source
 
-### ページを読む
+```bash
+git clone https://github.com/ai-aviate/better-mcp-notion.git
+cd better-mcp-notion
+npm install && npm run build
+```
+
+Then point your MCP config to `node /path/to/better-mcp-notion/build/index.js`.
+
+## Usage
+
+### Read a page
 
 ```
-read("https://notion.so/My-Page-abc123def456")
+read({ page: "https://notion.so/My-Page-abc123def456" })
 ```
 
-出力:
+Returns:
+
 ```markdown
 ---
 id: abc123-def456
@@ -80,10 +100,10 @@ properties:
 - Completed API design
 ```
 
-### ページを作成する
+### Create a page
 
 ```
-write(`
+write({ markdown: `
 ---
 title: Meeting Notes
 parent: "Project Alpha"
@@ -92,13 +112,13 @@ icon: "📝"
 ## Agenda
 - Review progress
 - Discuss next steps
-`)
+` })
 ```
 
-### DB エントリを作成する
+### Create a database entry
 
 ```
-write(`
+write({ markdown: `
 ---
 title: Fix login bug
 database: "Task Board"
@@ -111,15 +131,30 @@ properties:
 ---
 ## Description
 Login fails when password contains special chars.
-`)
+` })
 ```
 
-### 複数ページを一括作成する
-
-`===` で区切って複数ページを 1 回で作成:
+### Update a page (edit the output from read)
 
 ```
-write(`
+write({ markdown: `
+---
+id: abc123-def456
+title: Updated Title
+properties:
+  Status: Done
+---
+## New content
+Body replaces all existing blocks.
+` })
+```
+
+### Batch create (multiple pages in one call)
+
+Separate pages with `===`:
+
+```
+write({ markdown: `
 ---
 title: Task 1
 database: "Task Board"
@@ -135,47 +170,78 @@ properties:
   Status: Todo
 ---
 Task 2 details
-`)
+` })
 ```
 
-### DB を検索・フィルタする
+### Query a database with filters
 
 ```
-list("Task Board", filter: "Status is Done AND Priority is High", sort: "Due Date ascending")
+list({
+  target: "Task Board",
+  filter: "Status is Done AND Priority is High",
+  sort: "Due Date ascending"
+})
 ```
 
-### ページを更新する（read の出力を編集して write に渡す）
+#### Filter syntax
+
+- `Status is Done` / `Status = Done` - equals
+- `Priority != Low` - not equals
+- `Tags contains backend` - multi-select contains
+- `Done is true` - checkbox
+- `Score > 80` - number comparison (`>`, `<`, `>=`, `<=`)
+- `Due Date after 2026-03-01` - date after/before
+- Combine with `AND`: `Status is Done AND Priority is High`
+
+#### Sort syntax
+
+- `Due Date ascending` or `Due Date asc`
+- `Created descending` or `Created desc`
+
+### Read with child pages
 
 ```
-write(`
----
-id: abc123-def456
-title: Updated Title
-properties:
-  Status: Done
----
-## New content
-Body replaces all existing blocks.
-`)
+read({ page: "parent-page-id", depth: 2 })
 ```
 
-## 開発
+`depth: 1` = current page only (default), `2` = include children, `3` = include grandchildren.
+
+## Frontmatter Reference
+
+### Write (create/update)
+
+| Field | Create | Update | Description |
+|-------|--------|--------|-------------|
+| `id` | - | **required** | Page ID to update |
+| `title` | recommended | optional | Page title |
+| `parent` | required* | ignored | Parent page name or ID |
+| `database` | required* | ignored | Database name or ID (*either `parent` or `database`) |
+| `icon` | optional | optional | Emoji or image URL |
+| `cover` | optional | optional | Cover image URL |
+| `properties` | optional | optional | Database properties (matched against schema) |
+
+### Read (output only)
+
+| Field | Description |
+|-------|-------------|
+| `id` | Page UUID |
+| `url` | Notion page URL |
+| `title` | Page title |
+| `parent` / `database` | Parent page or database ID |
+| `icon`, `cover` | Emoji or image URL |
+| `properties` | All database properties |
+| `created`, `last_edited` | Timestamps (read-only) |
+
+Read-only fields (`url`, `created`, `last_edited`, formulas, etc.) are safely ignored when passed to `write`.
+
+## Development
 
 ```bash
-npm run dev       # TypeScript ウォッチモード
-npm test          # テスト実行
-npm run test:watch # テスト ウォッチモード
+npm run dev          # TypeScript watch mode
+npm test             # Run tests
+npm run test:watch   # Test watch mode
 ```
 
-## 技術スタック
+## License
 
-- **MCP**: @modelcontextprotocol/sdk
-- **Notion API**: @notionhq/client v5
-- **MD → Notion**: @tryfabric/martian
-- **Notion → MD**: notion-to-md
-- **Frontmatter**: gray-matter
-- **バリデーション**: zod
-
-## ライセンス
-
-MIT
+[Elastic License 2.0 (ELv2)](./LICENSE) — Free to use, modify, and distribute. Cannot be offered as a managed/hosted service.
