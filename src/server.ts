@@ -12,7 +12,7 @@ import { registerCommentTool } from "./tools/comment.js";
 export function createServer(): McpServer {
   const server = new McpServer({
     name: "better-mcp-notion",
-    version: "0.2.0",
+    version: "0.3.2",
   });
 
   registerReadTool(server);

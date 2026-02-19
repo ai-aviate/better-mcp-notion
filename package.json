@@ -1,6 +1,6 @@
 {
   "name": "better-mcp-notion",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "mcpName": "io.github.ai-aviate/better-notion",
   "description": "MCP server that lets you operate Notion with a single Markdown document (frontmatter + body)",
   "type": "module",

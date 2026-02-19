@@ -10,7 +10,7 @@ Existing Notion MCP servers are thin API wrappers that require multiple round-tr
 
 | | Traditional Notion MCP | better-mcp-notion |
 |---|---|---|
-| Tools | 16-22 tools | **6 tools** |
+| Tools | 16-22 tools | **9 tools** |
 | Create a DB entry | 3+ calls (search DB, get schema, create page, append blocks) | **1 call** |
 | Edit a page | 4+ calls (get page, get blocks, delete blocks, append blocks) | **1 call** (read, edit, write) |
 | Format | Raw JSON blocks | **Markdown** |
