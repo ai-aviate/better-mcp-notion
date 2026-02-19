@@ -149,6 +149,23 @@ Body replaces all existing blocks.
 ` })
 ```
 
+### Append content to an existing page
+
+Use `position: "append"` to add content to the end without rewriting the entire page.
+Only the new content needs to be provided — existing content is preserved.
+
+```
+write({ markdown: `
+---
+id: abc123-def456
+---
+## New section
+This is added to the end of the page.
+`, position: "append" })
+```
+
+`position: "prepend"` adds content to the beginning instead.
+
 ### Batch create (multiple pages in one call)
 
 Separate pages with `===`:

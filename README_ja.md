@@ -150,6 +150,23 @@ Body replaces all existing blocks.
 ` })
 ```
 
+### 既存ページに追記する
+
+`position: "append"` でページ末尾に追記。全体を書き直す必要なし。
+追加分だけ渡せばOK。
+
+```
+write({ markdown: `
+---
+id: abc123-def456
+---
+## 新しいセクション
+ページ末尾に追加される。
+`, position: "append" })
+```
+
+`position: "prepend"` で先頭に挿入もできる。
+
 ### 複数ページを一括作成する
 
 `===` で区切って 1 回で複数ページを作成:

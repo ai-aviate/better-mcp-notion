@@ -131,6 +131,92 @@ export async function appendBlocks(
 }
 
 /**
+ * ページの先頭にブロックを挿入する。
+ * Notion APIには「先頭に挿入」がないため、既存ブロックを全削除→新ブロック+旧ブロック再作成。
+ * ただしAI側は追加分だけ生成すれば良い。
+ */
+export async function prependBlocks(
+  pageId: string,
+  newChildren: BlockObjectRequest[]
+): Promise<void> {
+  const notion = getClient();
+
+  // 既存ブロックを取得して内容を抽出
+  const existingBlocks = await collectPaginatedAPI(
+    notion.blocks.children.list,
+    { block_id: pageId }
+  );
+
+  // 既存ブロックを全削除
+  const CONCURRENCY = 3;
+  for (let i = 0; i < existingBlocks.length; i += CONCURRENCY) {
+    const batch = existingBlocks.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      batch.map((block) => notion.blocks.delete({ block_id: block.id }))
+    );
+  }
+
+  // 新しいブロック → 既存ブロック の順で再作成
+  // 既存ブロックはBlockObjectRequestに変換する必要がある
+  const existingAsRequests = existingBlocks
+    .filter((b) => "type" in b)
+    .map((b) => blockToRequest(b))
+    .filter((b): b is BlockObjectRequest => b !== null);
+
+  await appendBlocks(pageId, [...newChildren, ...existingAsRequests]);
+}
+
+/**
+ * 取得済みブロックをBlockObjectRequestに変換する。
+ * 完全な変換は不可能だが、主要なブロック型をカバーする。
+ */
+function blockToRequest(block: Record<string, unknown>): BlockObjectRequest | null {
+  const type = block.type as string;
+  if (!type || !(type in block)) return null;
+
+  const data = block[type] as Record<string, unknown>;
+  if (!data) return null;
+
+  // テキスト系ブロック: rich_text を含む型
+  const textTypes = [
+    "paragraph", "heading_1", "heading_2", "heading_3",
+    "bulleted_list_item", "numbered_list_item", "quote",
+    "callout", "toggle",
+  ];
+  if (textTypes.includes(type)) {
+    const result: Record<string, unknown> = { [type]: { rich_text: data.rich_text } };
+    if (type === "callout" && data.icon) {
+      (result[type] as Record<string, unknown>).icon = data.icon;
+    }
+    return result as BlockObjectRequest;
+  }
+
+  // to_do
+  if (type === "to_do") {
+    return { to_do: { rich_text: data.rich_text, checked: data.checked } } as BlockObjectRequest;
+  }
+
+  // code
+  if (type === "code") {
+    return { code: { rich_text: data.rich_text, language: data.language } } as BlockObjectRequest;
+  }
+
+  // divider, table_of_contents, breadcrumb
+  if (type === "divider") return { divider: {} } as BlockObjectRequest;
+
+  // image, bookmark, embed 等は URL ベース
+  if (type === "image" && data.type === "external") {
+    return { image: { type: "external", external: (data as Record<string, unknown>).external } } as BlockObjectRequest;
+  }
+  if (type === "bookmark") {
+    return { bookmark: { url: data.url } } as BlockObjectRequest;
+  }
+
+  // 変換できないブロックはスキップ
+  return null;
+}
+
+/**
  * データソースを取得する（DBスキーマ取得用）。
  */
 export async function getDataSource(

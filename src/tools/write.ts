@@ -10,6 +10,7 @@ import {
   updatePage,
   deleteAllBlocks,
   appendBlocks,
+  prependBlocks,
   getDatabaseDataSourceId,
   getDataSource,
   resolveByName,
@@ -97,6 +98,16 @@ properties:
 Body replaces all existing blocks.
 \`\`\`
 
+### Append to an existing page (add content without rewriting):
+Use position: "append" to add content to the end, or "prepend" to add to the beginning.
+Only the new content needs to be provided — existing content is preserved.
+\`\`\`
+---
+id: abc123-def456
+---
+## New section added at the end
+\`\`\`
+
 ### Batch create (multiple pages in one call):
 \`\`\`
 ---
@@ -127,15 +138,19 @@ export function registerWriteTool(server: McpServer): void {
         .enum(["create", "update", "auto"])
         .default("auto")
         .describe('"auto" (default): create if no id, update if id present. "create": force create. "update": force update (requires id).'),
+      position: z
+        .enum(["replace", "append", "prepend"])
+        .default("replace")
+        .describe('"replace" (default): replace all content. "append": add to end (efficient, no need to send existing content). "prepend": add to beginning. Only affects updates.'),
     },
-    async ({ markdown, mode }) => {
+    async ({ markdown, mode, position }) => {
       // バッチ分割
       const documents = markdown.split(BATCH_SEPARATOR).map((s) => s.trim()).filter(Boolean);
 
       if (documents.length === 1) {
         // 単一ページ
         try {
-          const result = await processSingleWrite(documents[0], mode);
+          const result = await processSingleWrite(documents[0], mode, position);
           return { content: [{ type: "text", text: result }] };
         } catch (error) {
           return {
@@ -150,7 +165,7 @@ export function registerWriteTool(server: McpServer): void {
       let errors = 0;
       for (let i = 0; i < documents.length; i++) {
         try {
-          const result = await processSingleWrite(documents[i], mode);
+          const result = await processSingleWrite(documents[i], mode, position);
           results.push(`${i + 1}. ${result}`);
         } catch (error) {
           errors++;
@@ -169,14 +184,14 @@ export function registerWriteTool(server: McpServer): void {
 
 // ─── Single page write ───
 
-async function processSingleWrite(markdown: string, mode: string): Promise<string> {
+async function processSingleWrite(markdown: string, mode: string, position: string): Promise<string> {
   const { frontmatter: fm, content } = parseMarkdown(markdown);
   const blocks = markdownToNotionBlocks(content);
 
   const isUpdate = mode === "update" || (mode === "auto" && !!fm.id);
   const isCreate = mode === "create" || (mode === "auto" && !fm.id);
 
-  if (isUpdate) return await doUpdate(fm, content, blocks);
+  if (isUpdate) return await doUpdate(fm, content, blocks, position);
   if (isCreate) return await doCreate(fm, blocks);
   throw new NotionMcpError("Invalid mode.", "INVALID_MODE");
 }
@@ -184,7 +199,8 @@ async function processSingleWrite(markdown: string, mode: string): Promise<strin
 async function doUpdate(
   fm: DocumentFrontmatter,
   content: string,
-  blocks: BlockObjectRequest[]
+  blocks: BlockObjectRequest[],
+  position: string
 ): Promise<string> {
   if (!fm.id) {
     throw new NotionMcpError(
@@ -210,12 +226,24 @@ async function doUpdate(
 
   await updatePage(pageId, updateParams as Parameters<typeof updatePage>[1]);
 
-  if (content.trim()) {
-    await deleteAllBlocks(pageId);
-    await appendBlocks(pageId, blocks);
+  if (content.trim() && blocks.length > 0) {
+    switch (position) {
+      case "append":
+        await appendBlocks(pageId, blocks);
+        break;
+      case "prepend":
+        await prependBlocks(pageId, blocks);
+        break;
+      case "replace":
+      default:
+        await deleteAllBlocks(pageId);
+        await appendBlocks(pageId, blocks);
+        break;
+    }
   }
 
-  return `Updated: "${fm.title ?? pageId}" (${pageId})`;
+  const action = position === "append" ? "Appended to" : position === "prepend" ? "Prepended to" : "Updated";
+  return `${action}: "${fm.title ?? pageId}" (${pageId})`;
 }
 
 async function doCreate(
