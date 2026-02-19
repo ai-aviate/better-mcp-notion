@@ -1,6 +1,6 @@
 {
   "name": "better-mcp-notion",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server that lets you operate Notion with a single Markdown document (frontmatter + body)",
   "type": "module",
   "main": "build/index.js",
