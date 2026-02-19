@@ -3,3 +3,5 @@ build/
 .env
 .mcp.json
 *.tsbuildinfo
+.mcpregistry_*
+mcp-publisher
